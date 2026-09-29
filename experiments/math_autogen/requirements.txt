@@ -1,0 +1,5 @@
+autogen-agentchat>=0.7.5,<0.8
+autogen-core>=0.7.5,<0.8
+autogen-ext[openai]>=0.7.5,<0.8
+datasets>=4,<5
+sympy>=1.12,<2

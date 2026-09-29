@@ -1,54 +1,106 @@
 # EntroFlow
 
-EntroFlow is a runtime plug-in for multi-agent workflows. It observes
-communication traces, estimates rolling edge-level communication entropy, and
-selects constrained repairs to communication links, execution order, or
-validation pathways.
+EntroFlow is a framework-neutral diagnostics library for multi-agent workflows.
+It reconstructs workflow topology from saved trajectories, distinguishes local
+failures from propagated failures using opportunity-aware node contracts, and
+evaluates local workflow changes with paired outcomes and cost.
 
-The research target is a fair comparison under a fixed LLM backbone, task
-split, initial AutoGen workflow, and inference budget. EntroFlow is not a new
-QA backbone or a replacement for AutoGen.
+The core package does not require AutoGen or a model provider. Framework
+adapters are responsible for recording topology, visible context, outputs,
+provenance, and task outcomes.
 
-## Scope
+## Features
 
-The first experiment uses AutoGen with MuSiQue. The baseline workflow, random
-repair controller, trace-based controller without entropy, and EntroFlow must
-use the same model, prompts, maximum steps, and token budget.
+- Static topology primitives for sequence, fork/join, conditional routing, and
+  bounded feedback.
+- Per-sample activated execution graphs with execution-instance identities.
+- Opportunity-aware node and edge diagnosis without topology-specific rules.
+- Local rewrite proposals and paired comparison under explicit cost budgets.
+- Optional AutoGen and embedding integrations.
 
-EntroFlow receives structured message embeddings from the host runtime. Its
-initial repair library is deliberately constrained to evidence bypass,
-validation insertion, and execution reordering. Results must report accuracy,
-total inference cost, intervention cost, regressions, and repair acceptance.
-
-See [the Chinese research scope](docs/research_scope.md) for the current
-protocol. Historical MA-Base/V4 code, traces, results, and documents have been
-removed and must not be used as evidence for this project.
-
-## Install
+## Installation
 
 ```bash
-pip install -e '.[dev]'
-pip install 'autogen-agentchat>=0.4' 'autogen-core>=0.4'
+python -m pip install -e .
 ```
 
-The core package only depends on NumPy and scikit-learn. AutoGen integration
-is intentionally kept outside the entropy core so the plug-in can attach to a
-supported AutoGen runtime without owning the execution framework.
+Development dependencies:
 
-## Core API
+```bash
+python -m pip install -e '.[dev]'
+```
+
+Optional integrations:
+
+```bash
+python -m pip install -e '.[autogen,embedding]'
+```
+
+EntroFlow requires Python 3.10 or newer.
+
+## Quick start
+
+Rolling communication entropy remains available for framework adapters:
 
 ```python
 import numpy as np
+
 from entroflow.entropy import RollingEdgeEntropy
 
 monitor = RollingEdgeEntropy(window_size=32, min_samples=8)
-event = monitor.observe("retriever_to_reasoner", np.asarray(embedding))
-if event.ready and abs(event.delta) >= 0.15:
-    # The host controller may choose one allowed repair action.
-    pass
+event = monitor.observe("retriever_to_reasoner", np.asarray([0.1, 0.2, 0.3]))
+
+if event.ready:
+    print(event.entropy, event.delta)
 ```
 
-This repository contains no benchmark data, model weights, API credentials, or
-historical experiment outputs.
-# EntroFlow
-# EntroFlow
+Topology inspection and diagnosis use framework-neutral dictionaries and node
+contracts:
+
+```python
+from entroflow.topology_optimizer import NodeSpec, diagnose, inspect_workflow
+
+graph = inspect_workflow(saved_trajectories)
+diagnosis = diagnose(
+    saved_trajectories,
+    specs={
+        "solver": NodeSpec("answer", answer_label="Candidate"),
+        "judge": NodeSpec(
+            "judge",
+            candidates={"solver": "verdict"},
+            opportunity="all_sources_observed",
+            opportunity_sources=("solver",),
+        ),
+    },
+    answer_evaluator=evaluate_answer,
+)
+```
+
+See [the topology optimizer guide](docs/topology_optimizer_plugin.md) for the
+trajectory schema, diagnosis contract, and local rewrite loop.
+
+## Repository layout
+
+```text
+src/entroflow/   Core library
+tests/           Unit and integration tests
+docs/            Maintained architecture and research documentation
+experiments/     Reproducible experiment runners; generated outputs are ignored
+```
+
+Large datasets, checkpoints, model outputs, run logs, and generated reports are
+not stored in the repository. Experiment commands create their output
+directories locally.
+
+## Development
+
+```bash
+python -m pytest -q
+ruff check .
+python -m build
+```
+
+Contribution guidelines are in [CONTRIBUTING.md](CONTRIBUTING.md). The project
+is released under the [MIT License](LICENSE).
+
+Chinese documentation: [README_ch.md](README_ch.md).

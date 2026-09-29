@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "entroflow"
 version = "0.2.0"
-description = "Runtime communication-entropy plug-in for multi-agent workflows."
+description = "Opportunity-conditioned diagnostics for multi-agent workflows."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }

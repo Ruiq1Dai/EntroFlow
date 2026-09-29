@@ -1,0 +1,54 @@
+{
+  "solver": {
+    "required_inputs": ["task_contract"],
+    "access_requirements": [
+      {"name": "task_available", "inputs": ["task_contract"], "mode": "all_healthy"}
+    ]
+  },
+  "processor": {
+    "required_inputs": ["candidate"],
+    "access_requirements": [
+      {"name": "usable_candidate", "inputs": ["candidate"], "mode": "all_healthy"}
+    ]
+  },
+  "judge": {
+    "required_inputs": ["task_contract", "candidate_a", "candidate_b"],
+    "access_requirements": [
+      {"name": "task_available", "inputs": ["task_contract"], "mode": "all_healthy"},
+      {"name": "correct_candidate_available", "inputs": ["candidate_a", "candidate_b"], "mode": "any_healthy"}
+    ]
+  },
+  "verifier": {
+    "required_inputs": ["candidate"],
+    "access_requirements": [
+      {"name": "candidate_observable", "inputs": ["candidate"], "mode": "all_observed"}
+    ]
+  },
+  "router": {
+    "required_inputs": ["verifier_report"],
+    "access_requirements": [
+      {"name": "verdict_observable", "inputs": ["verifier_report"], "mode": "all_observed"}
+    ]
+  },
+  "direct": {
+    "required_inputs": ["candidate"],
+    "access_requirements": [
+      {"name": "candidate_usable", "inputs": ["candidate"], "mode": "all_healthy"}
+    ]
+  },
+  "repair": {
+    "required_inputs": ["task_contract", "candidate", "verifier_feedback"],
+    "recovery_inputs": ["task_contract", "candidate", "verifier_feedback"],
+    "access_requirements": [
+      {"name": "task_observable", "inputs": ["task_contract"], "mode": "all_healthy"},
+      {"name": "failed_candidate_observable", "inputs": ["candidate"], "mode": "all_observed"},
+      {"name": "feedback_observable", "inputs": ["verifier_feedback"], "mode": "all_observed"}
+    ]
+  },
+  "output": {
+    "required_inputs": ["candidate"],
+    "access_requirements": [
+      {"name": "correct_candidate_available", "inputs": ["candidate"], "mode": "all_healthy"}
+    ]
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "schema_version": "compositional-topology-v1",
+  "topologies": [
+    {
+      "topology_id": "p1_sequence_v1",
+      "primitives": ["sequence", "terminate"],
+      "entry_nodes": ["generator"],
+      "terminal_nodes": ["output"],
+      "max_iterations": 0,
+      "nodes": [
+        {"id": "generator", "role": "generator", "contract_id": "solver"},
+        {"id": "processor", "role": "processor", "contract_id": "processor"},
+        {"id": "output", "role": "output", "contract_id": "output"}
+      ],
+      "edges": [
+        {"id": "p1_generator_processor", "source": "generator", "target": "processor", "kind": "data"},
+        {"id": "p1_processor_output", "source": "processor", "target": "output", "kind": "data"}
+      ]
+    },
+    {
+      "topology_id": "p2_fork_join_v1",
+      "primitives": ["fork", "join", "terminate"],
+      "entry_nodes": ["solver_a", "solver_b"],
+      "terminal_nodes": ["output"],
+      "max_iterations": 0,
+      "nodes": [
+        {"id": "solver_a", "role": "solver", "contract_id": "solver"},
+        {"id": "solver_b", "role": "solver", "contract_id": "solver"},
+        {"id": "judge", "role": "aggregator", "contract_id": "judge"},
+        {"id": "output", "role": "output", "contract_id": "output"}
+      ],
+      "edges": [
+        {"id": "p2_a_judge", "source": "solver_a", "target": "judge", "kind": "data"},
+        {"id": "p2_b_judge", "source": "solver_b", "target": "judge", "kind": "data"},
+        {"id": "p2_judge_output", "source": "judge", "target": "output", "kind": "data"}
+      ]
+    },
+    {
+      "topology_id": "p3a_oracle_gated_select_v1",
+      "primitives": ["sequence", "select", "terminate"],
+      "entry_nodes": ["verifier"],
+      "terminal_nodes": ["output"],
+      "max_iterations": 0,
+      "nodes": [
+        {"id": "verifier", "role": "tool_verifier", "contract_id": "verifier"},
+        {"id": "route_gate", "role": "oracle_router", "contract_id": "router"},
+        {"id": "direct", "role": "direct_path", "contract_id": "direct"},
+        {"id": "specialist", "role": "repair_specialist", "contract_id": "repair"},
+        {"id": "output", "role": "output", "contract_id": "output"}
+      ],
+      "edges": [
+        {"id": "p3_verifier_gate", "source": "verifier", "target": "route_gate", "kind": "data"},
+        {"id": "p3_gate_direct", "source": "route_gate", "target": "direct", "kind": "control", "condition": "pass"},
+        {"id": "p3_gate_specialist", "source": "route_gate", "target": "specialist", "kind": "control", "condition": "fail"},
+        {"id": "p3_direct_output", "source": "direct", "target": "output", "kind": "data"},
+        {"id": "p3_specialist_output", "source": "specialist", "target": "output", "kind": "data"}
+      ],
+      "metadata": {"routing_claim": "oracle-gated causal validation only", "learned_select_deferred": true}
+    },
+    {
+      "topology_id": "p4_bounded_feedback_v1",
+      "primitives": ["sequence", "select", "iterate", "terminate"],
+      "entry_nodes": ["generator"],
+      "terminal_nodes": ["output"],
+      "max_iterations": 2,
+      "nodes": [
+        {"id": "generator", "role": "generator", "contract_id": "solver"},
+        {"id": "verifier", "role": "tool_verifier", "contract_id": "verifier"},
+        {"id": "route_gate", "role": "oracle_router", "contract_id": "router"},
+        {"id": "repair", "role": "repair", "contract_id": "repair"},
+        {"id": "output", "role": "output", "contract_id": "output"}
+      ],
+      "edges": [
+        {"id": "p4_generator_verifier", "source": "generator", "target": "verifier", "kind": "data"},
+        {"id": "p4_verifier_gate", "source": "verifier", "target": "route_gate", "kind": "data"},
+        {"id": "p4_gate_output", "source": "route_gate", "target": "output", "kind": "control", "condition": "pass_or_limit_or_observation_boundary"},
+        {"id": "p4_gate_repair", "source": "route_gate", "target": "repair", "kind": "control", "condition": "fail_with_budget"},
+        {"id": "p4_repair_verifier", "source": "repair", "target": "verifier", "kind": "feedback"}
+      ]
+    },
+    {
+      "topology_id": "c1_parallel_conditional_repair_v1",
+      "primitives": ["fork", "join", "select", "iterate", "terminate"],
+      "entry_nodes": ["solver_a", "solver_b"],
+      "terminal_nodes": ["output"],
+      "max_iterations": 2,
+      "nodes": [
+        {"id": "solver_a", "role": "solver", "contract_id": "solver"},
+        {"id": "solver_b", "role": "solver", "contract_id": "solver"},
+        {"id": "judge", "role": "aggregator", "contract_id": "judge"},
+        {"id": "verifier", "role": "tool_verifier", "contract_id": "verifier"},
+        {"id": "route_gate", "role": "oracle_router", "contract_id": "router"},
+        {"id": "repair", "role": "repair", "contract_id": "repair"},
+        {"id": "output", "role": "output", "contract_id": "output"}
+      ],
+      "edges": [
+        {"id": "c1_a_judge", "source": "solver_a", "target": "judge", "kind": "data"},
+        {"id": "c1_b_judge", "source": "solver_b", "target": "judge", "kind": "data"},
+        {"id": "c1_judge_verifier", "source": "judge", "target": "verifier", "kind": "data"},
+        {"id": "c1_verifier_gate", "source": "verifier", "target": "route_gate", "kind": "data"},
+        {"id": "c1_gate_output", "source": "route_gate", "target": "output", "kind": "control", "condition": "pass_or_limit_or_observation_boundary"},
+        {"id": "c1_gate_repair", "source": "route_gate", "target": "repair", "kind": "control", "condition": "fail_with_budget"},
+        {"id": "c1_repair_verifier", "source": "repair", "target": "verifier", "kind": "feedback"}
+      ]
+    }
+  ]
+}

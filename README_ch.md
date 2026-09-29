@@ -1,78 +1,71 @@
 # EntroFlow
 
-EntroFlow 是面向多智能体工作流的运行时 plug-in。它观察 collaboration traces，计算滚动的边级 communication entropy，并在受限动作库中选择通信链接、执行顺序或验证路径的修复动作。
+EntroFlow 是一个面向多智能体工作流的框架无关诊断库。它从保存的轨迹重建工作流拓扑，依据节点契约和实际可见输入区分局部失败与传播失败，并用配对结果和成本评估局部工作流修改。
 
-论文比较固定 backbone、固定 MuSiQue 划分、固定 AutoGen 初始工作流和固定推理预算下的系统表现。EntroFlow 不是新的 QA backbone，也不替代 AutoGen。
+核心包不依赖 AutoGen 或特定模型服务。框架适配器只需记录拓扑、节点可见上下文、输出、provenance 和最终任务结果。
 
-当前研究协议见 [docs/research_scope.md](docs/research_scope.md)。历史 MA-Base/V4 代码、轨迹、结果和文档已经移除，不能再作为论文证据。
+## 主要能力
 
-```bash
-pip install -e '.[dev]'
-pip install 'autogen-agentchat>=0.4' 'autogen-core>=0.4'
-```
+- Sequence、Fork/Join、条件路由和 bounded feedback 静态原语；
+- 带 execution-instance identity 的样本级激活执行图；
+- 不依赖 topology-specific rule 的机会条件化节点与边归因；
+- 带显式成本约束的局部 rewrite proposal 和 paired comparison；
+- 可选的 AutoGen 与 embedding 集成。
 
-核心包只提供框架无关的边级熵监测；AutoGen 负责 agent 执行与消息传递，EntroFlow 负责读取 trace 并提出受限 repair action。
-
-## 模型配置
-
-密钥放在仓库根目录的 `.env`，不要写入源码或提交到 Git：
+## 安装
 
 ```bash
-cp .env.example .env
+python -m pip install -e .
 ```
+
+开发环境：
+
+```bash
+python -m pip install -e '.[dev]'
+```
+
+可选集成：
+
+```bash
+python -m pip install -e '.[autogen,embedding]'
+```
+
+EntroFlow 需要 Python 3.10 或更高版本。
+
+## 快速示例
+
+```python
+import numpy as np
+
+from entroflow.entropy import RollingEdgeEntropy
+
+monitor = RollingEdgeEntropy(window_size=32, min_samples=8)
+event = monitor.observe("retriever_to_reasoner", np.asarray([0.1, 0.2, 0.3]))
+
+if event.ready:
+    print(event.entropy, event.delta)
+```
+
+拓扑检查、轨迹字段、诊断契约和局部 rewrite 流程见
+[topology optimizer 文档](docs/topology_optimizer_plugin.md)。
+
+## 仓库结构
 
 ```text
-MODEL_API_KEY=你的密钥
-MODEL_BASE_URL=服务商提供的 OpenAI-compatible /v1 地址
-MODEL_NAME=deepseek-v4-flash
+src/entroflow/   核心库
+tests/           单元与集成测试
+docs/            长期维护的架构和研究文档
+experiments/     可复现实验 runner；生成结果默认忽略
 ```
 
-AutoGen 不会自动读取该文件。运行实验前加载环境变量：
+仓库不保存大型数据集、checkpoints、模型输出、运行日志或自动生成报告。实验命令会在本地创建输出目录。
+
+## 开发验证
 
 ```bash
-set -a
-source .env
-set +a
+python -m pytest -q
+ruff check .
+python -m build
 ```
 
-## MuSiQue baseline
-
-先运行不含 repair 的静态 AutoGen workflow，避免把后续 EntroFlow 增益混入基线：
-
-```bash
-python experiments/musique/run.py \
-  --data data/MuSiQue/musique_ans_v1.0_dev.jsonl \
-  --output artifacts/static_dev/results.jsonl \
-  --traces artifacts/static_dev/traces.jsonl \
-  --summary artifacts/static_dev/summary.json \
-  --failures artifacts/static_dev/failures.jsonl \
-  --policy static \
-  --target-failures 200 \
-  --resume
-```
-
-`summary.json` 中的 `accuracy` 是 normalized exact match 的均值；`macro_f1` 是逐题 token F1
-的宏平均。15.9 accuracy 与 39.85/44.05 F1 属于不同指标，不能直接比较。失败样本及其完整
-AutoGen 通信事件按 `run_id` 写入 `failures.jsonl`，作为后续轨迹熵分析的输入。
-
-修复策略必须使用相同 `example_id` 做逐题配对，报告救回（baseline 错、repair 对）、回归
-（baseline 对、repair 错）和额外 token，而不能只比较总体 accuracy：
-
-```bash
-python experiments/musique/evaluate_paired_repairs.py \
-  --baseline artifacts/static_stratified_20/results.jsonl \
-  --candidate artifacts/random_repair_20/results.jsonl artifacts/entropy_repair_20/results.jsonl \
-  --output artifacts/paired_repair_evaluation.json
-```
-
-按 MuSiQue dev 的 hop 分布收集 200 条失败轨迹（2-hop/3-hop/4-hop 为 104/63/33）：
-
-```bash
-python experiments/musique/run.py \
-  --data data/MuSiQue/musique_ans_v1.0_dev.jsonl \
-  --output artifacts/static_failures_200/results.jsonl \
-  --traces artifacts/static_failures_200/traces.jsonl \
-  --summary artifacts/static_failures_200/summary.json \
-  --failures artifacts/static_failures_200/failures.jsonl \
-  --policy static --seed 42 --target-failures-by-hop 104 63 33 --concurrency 6 --resume
-```
+贡献说明见 [CONTRIBUTING.md](CONTRIBUTING.md)，许可证见 [LICENSE](LICENSE)。

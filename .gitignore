@@ -1,9 +1,57 @@
+# Python
 __pycache__/
 *.py[cod]
-.pytest_cache/
-.venv/
-.env
 *.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+
+# Environments and local configuration
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*~
+*.swp
+
+# Datasets, model caches, and generated experiment artifacts
 data/
 artifacts/
+experiments/**/outputs/
+experiments/**/pilot_outputs/
+experiments/**/full_humaneval_outputs/
+experiments/**/.cache/
+experiments/**/.cache_*/
+experiments/**/artifacts/
+experiments/**/artifacts_*/
+experiments/**/hidden_artifacts_*/
+experiments/**/replay_cache.sqlite3
+experiments/**/hidden_replay_cache.sqlite3
+
+# Logs and temporary databases
 *.log
+*.sqlite3
+*.tmp
+*.bak
+
+# LaTeX build products
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.xdv
+missfont.log
+docs/*.pdf

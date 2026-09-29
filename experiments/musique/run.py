@@ -11,10 +11,8 @@ import re
 from dataclasses import asdict
 from pathlib import Path
 
-from entroflow.autogen_workflow import AutoGenMuSiQueWorkflow
 from entroflow.embeddings import LocalTransformerEmbedder
 from entroflow.evaluation import exact_match_any, token_f1_any
-from entroflow.model_client import create_model_client
 from entroflow.musique import load_musique
 from entroflow.reporting import (
     failed_trajectories,
@@ -125,6 +123,9 @@ def cap_failures_by_hop(failures, targets):
 
 
 async def run(args) -> None:
+    from entroflow.autogen_workflow import AutoGenMuSiQueWorkflow
+    from entroflow.model_client import create_model_client
+
     load_env()
     examples = load_musique(args.data, limit=None if args.stratified_hops else args.limit)
     if args.selection_file:

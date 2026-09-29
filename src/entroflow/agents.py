@@ -6,12 +6,11 @@ import json
 import re
 from typing import Any
 
+import numpy as np
 from autogen_core import MessageContext, RoutedAgent, message_handler
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
-import numpy as np
 
 from .entropy import semantic_entropy
-from .embeddings import LocalTransformerEmbedder
 from .messages import RoleRequest, RoleResponse
 
 ROLE_PROMPTS = {
@@ -103,7 +102,9 @@ class WorkflowRoleAgent(RoutedAgent):
                 extra_create_args={
                     "max_tokens": ROLE_MAX_TOKENS[self.role],
                     "temperature": 0.7 if self.semantic_samples > 1 else 0,
-                    "extra_body": {"thinking": {"type": "disabled"}},
+                    "extra_body": {
+                        "chat_template_kwargs": {"enable_thinking": False}
+                    },
                 }, cancellation_token=ctx.cancellation_token,
             )
             if not isinstance(result.content, str):
@@ -125,7 +126,6 @@ class WorkflowRoleAgent(RoutedAgent):
         status = payload.get("status", "ok")
         raw_ids = payload.get("evidence_ids", [])
         evidence_ids = tuple(int(value) for value in raw_ids if isinstance(value, (int, str)) and str(value).isdigit())
-        usage = results[0].usage
         return RoleResponse(
             run_id=message.run_id,
             example_id=message.example_id,
